@@ -48,18 +48,34 @@
   .item-row:last-child{ border-bottom:none; }
   @keyframes pulseRing{ 0%{box-shadow:0 0 0 0 rgba(201,162,39,.45);} 100%{box-shadow:0 0 0 14px rgba(201,162,39,0);} }
   .pulse{ animation: pulseRing 1.8s infinite; }
+  @keyframes toastIn{ from{ opacity:0; transform:translate(-50%,10px); } to{ opacity:1; transform:translate(-50%,0); } }
+  .toast{ animation: toastIn .2s ease; }
+  .add-btn{ -webkit-tap-highlight-color: rgba(201,162,39,.35); touch-action: manipulation; }
+  .add-btn.added{ background:#1E7D3C !important; }
+  #cartFab{ padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)); }
 </style>
 </head>
 <body class="min-h-screen pb-28">
 
 <!-- ================= NO ROOM SCREEN ================= -->
-<div id="noRoomScreen" class="hidden fixed inset-0 z-[100] bg-navy-800 flex items-center justify-center px-6">
-  <div class="text-center max-w-sm">
+<div id="noRoomScreen" class="hidden fixed inset-0 z-[100] bg-navy-800 flex items-center justify-center px-6 overflow-y-auto py-10">
+  <div class="text-center max-w-sm w-full">
     <div class="text-5xl mb-5">🥂</div>
     <h1 class="font-serif text-2xl text-white mb-3">K&amp;C Royal Suite &amp; Event Place</h1>
     <p class="text-gold text-sm tracking-wide uppercase mb-4">In-Room Ordering</p>
-    <p class="text-white/70 text-sm leading-relaxed">Please scan the QR code placed in your room to view the menu and place an order. If you believe this is an error, kindly contact the front desk.</p>
-    <button onclick="openWhatsAppHelp()" class="mt-8 inline-block bg-gold text-navy-900 font-semibold text-sm px-6 py-3 rounded-full">Message the Front Desk</button>
+    <p class="text-white/70 text-sm leading-relaxed">Please scan the QR code placed in your room to view the menu and place an order.</p>
+
+    <div class="mt-8 bg-white/5 border border-white/15 rounded-2xl p-5 text-left">
+      <p class="text-white text-sm font-medium mb-1">Can't scan the code?</p>
+      <p class="text-white/60 text-xs mb-3">Enter your room number below to view the menu manually.</p>
+      <div class="flex gap-2">
+        <input id="manualRoomInput" type="tel" inputmode="numeric" placeholder="e.g. 104" class="flex-1 min-w-0 rounded-lg px-3 py-2.5 text-sm bg-white text-navy-900 outline-none">
+        <button onclick="submitManualRoom()" class="bg-gold text-navy-900 font-semibold text-sm px-4 py-2.5 rounded-lg shrink-0">Go</button>
+      </div>
+      <p id="manualRoomError" class="text-red-300 text-xs mt-2 hidden">That room number wasn't recognized. Please check and try again, or contact the front desk.</p>
+    </div>
+
+    <button onclick="openWhatsAppHelp()" class="mt-6 inline-block bg-transparent border border-gold text-gold font-semibold text-sm px-6 py-3 rounded-full">Message the Front Desk</button>
   </div>
 </div>
 
@@ -89,11 +105,14 @@
   <main id="menuContainer" class="px-4 pt-4 max-w-2xl mx-auto"></main>
 
   <!-- Floating cart button -->
-  <button id="cartFab" onclick="openCart()" class="hidden fixed bottom-5 right-5 z-40 bg-navy-800 text-white rounded-full shadow-2xl px-5 py-4 items-center gap-2 pulse">
+  <button id="cartFab" onclick="openCart()" class="hidden fixed right-5 z-40 bg-navy-800 text-white rounded-full shadow-2xl px-5 py-4 items-center gap-2 pulse">
     <span class="text-xl">🛒</span>
     <span id="cartFabCount" class="bg-gold text-navy-900 rounded-full text-xs font-bold w-5 h-5 flex items-center justify-center">0</span>
     <span id="cartFabTotal" class="font-serif text-sm hidden sm:inline">₦0</span>
   </button>
+
+  <!-- Add-to-cart toast -->
+  <div id="addToast" class="hidden toast fixed bottom-24 left-1/2 z-50 bg-navy-800 text-white text-sm font-medium px-4 py-2.5 rounded-full shadow-xl whitespace-nowrap"></div>
 
   <!-- Cart drawer -->
   <div id="cartOverlay" class="fixed inset-0 bg-black/50 z-40 hidden fade opacity-0" onclick="closeCart()"></div>
@@ -220,6 +239,11 @@
       <input id="mgrWhatsappInput" type="text" class="w-full border border-navy-800/20 rounded-lg px-3 py-2.5 text-sm mb-3">
       <button onclick="saveWhatsappSetting()" class="bg-navy-800 text-white text-sm px-5 py-2.5 rounded-full">Save</button>
       <p id="settingsSaved" class="text-xs text-green-600 mt-2 hidden">Saved.</p>
+
+      <div class="mt-8 pt-6 border-t border-navy-800/10">
+        <p class="text-xs text-navy-800/60 mb-2">Troubleshooting: if menu items or orders look wrong on a device, this clears saved app data on THIS device only and reloads fresh defaults. It does not affect other guests' devices.</p>
+        <button onclick="resetLocalData()" class="text-xs border border-red-400 text-red-500 px-4 py-2 rounded-full">Reset This Device's Data</button>
+      </div>
     </div>
   </div>
 </div>
@@ -246,21 +270,18 @@ function seedFoodMenu(){
   const items = [];
   const push = (name, price, group, hasSoup) => { items.push({ id: 'f'+(id++), name, price, group, hasSoup: !!hasSoup, available: true }); };
 
-  // Pepper Soup
   push("Chicken Pepper Soup", 5000, "Pepper Soup");
   push("Catfish Pepper Soup", 15000, "Pepper Soup");
   push("Turkey Pepper Soup", 6500, "Pepper Soup");
   push("Cow Tail Pepper Soup", 5000, "Pepper Soup");
   push("Goat Meat Pepper Soup", 5000, "Pepper Soup");
 
-  // Main Dish (choice of swallow/soup)
   push("Beef", 6500, "Main Dish", true);
   push("Kpomo", 6500, "Main Dish", true);
   push("Chicken", 9000, "Main Dish", true);
   push("Turkey", 10000, "Main Dish", true);
   push("Goat Meat", 8500, "Main Dish", true);
 
-  // Rice / Pasta
   push("Chinese Fried Rice", 15000, "Rice / Pasta");
   push("Jollof Rice & Chicken", 9000, "Rice / Pasta");
   push("Jollof Rice & Turkey", 10000, "Rice / Pasta");
@@ -274,14 +295,12 @@ function seedFoodMenu(){
   push("Basmati Fried Rice", 10500, "Rice / Pasta");
   push("Basmati Jollof Rice", 10500, "Rice / Pasta");
 
-  // Specials
   push("Isiewu Half Pot", 7500, "Specials");
   push("Isiewu Full Pot", 15000, "Specials");
   push("Nkwobi", 5000, "Specials");
   push("Fish Barbecue", 16000, "Specials");
   push("Asun", 2000, "Specials");
 
-  // Extras
   push("White Rice", 2000, "Extras");
   push("Peppered Beef/Kpomo", 1000, "Extras");
   push("Extra Soup", 2000, "Extras");
@@ -319,16 +338,29 @@ function seedDrinksMenu(){
 // ---------- Storage helpers ----------
 const LS = {
   get(key, fallback){ try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; } },
-  set(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+  set(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){ console.error('Storage write failed', e); } }
 };
 
 function initStorage(){
-  if(!LS.get('kc_food_menu')) LS.set('kc_food_menu', seedFoodMenu());
-  if(!LS.get('kc_drinks_menu')) LS.set('kc_drinks_menu', seedDrinksMenu());
-  if(!LS.get('kc_settings')) LS.set('kc_settings', { whatsapp: "2348160812635", managerPassword: MANAGER_PASSWORD_DEFAULT });
+  const existingFood = LS.get('kc_food_menu');
+  const existingDrinks = LS.get('kc_drinks_menu');
+  if(!Array.isArray(existingFood) || existingFood.length === 0) LS.set('kc_food_menu', seedFoodMenu());
+  if(!Array.isArray(existingDrinks) || existingDrinks.length === 0) LS.set('kc_drinks_menu', seedDrinksMenu());
+  if(!LS.get('kc_settings')) LS.set('kc_settings', { whatsapp: "2347080716547", managerPassword: MANAGER_PASSWORD_DEFAULT });
   if(!LS.get('kc_orders')) LS.set('kc_orders', []);
 }
 initStorage();
+
+function resetLocalData(){
+  if(!confirm('This will clear saved menu edits, WhatsApp number changes, and the order log on THIS device, then reload with defaults. Continue?')) return;
+  try{
+    localStorage.removeItem('kc_food_menu');
+    localStorage.removeItem('kc_drinks_menu');
+    localStorage.removeItem('kc_settings');
+    localStorage.removeItem('kc_orders');
+  }catch(e){}
+  location.reload();
+}
 
 let foodMenu = LS.get('kc_food_menu', []);
 let drinksMenu = LS.get('kc_drinks_menu', []);
@@ -339,20 +371,42 @@ let orders = LS.get('kc_orders', []);
 let currentRoom = null;
 let currentCategory = null;
 
+function activateRoom(roomNum){
+  currentRoom = roomNum;
+  currentCategory = ROOM_MAP[roomNum];
+  document.getElementById('noRoomScreen').classList.add('hidden');
+  document.getElementById('appRoot').classList.remove('hidden');
+  document.getElementById('roomBadge').textContent = 'Room ' + roomNum;
+  document.getElementById('categoryBadge').textContent = currentCategory + ' Room';
+  try{
+    const url = new URL(window.location.href);
+    url.searchParams.set('room', roomNum);
+    window.history.replaceState({}, '', url);
+  }catch(e){}
+  switchTab('food');
+}
+
 function detectRoom(){
   const params = new URLSearchParams(window.location.search);
   const roomParam = params.get('room');
   const roomNum = parseInt(roomParam, 10);
   if(roomParam && ROOM_MAP[roomNum]){
-    currentRoom = roomNum;
-    currentCategory = ROOM_MAP[roomNum];
-    document.getElementById('noRoomScreen').classList.add('hidden');
-    document.getElementById('appRoot').classList.remove('hidden');
-    document.getElementById('roomBadge').textContent = 'Room ' + roomNum;
-    document.getElementById('categoryBadge').textContent = currentCategory + ' Room';
+    activateRoom(roomNum);
   } else {
     document.getElementById('appRoot').classList.add('hidden');
     document.getElementById('noRoomScreen').classList.remove('hidden');
+  }
+}
+
+function submitManualRoom(){
+  const val = document.getElementById('manualRoomInput').value.trim();
+  const roomNum = parseInt(val, 10);
+  const errorEl = document.getElementById('manualRoomError');
+  if(val && ROOM_MAP[roomNum]){
+    errorEl.classList.add('hidden');
+    activateRoom(roomNum);
+  } else {
+    errorEl.classList.remove('hidden');
   }
 }
 
@@ -360,6 +414,15 @@ function detectRoom(){
 let cart = []; // {itemId, name, price, qty, menuType, group, soup}
 
 function formatN(n){ return '₦' + Number(n).toLocaleString('en-NG'); }
+
+let toastTimer = null;
+function showToast(msg){
+  const el = document.getElementById('addToast');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add('hidden'), 1400);
+}
 
 function addToCart(item, menuType, soup){
   const key = item.id + (soup ? ('__'+soup) : '');
@@ -373,12 +436,13 @@ function addToCart(item, menuType, soup){
       name: item.name + (soup ? (' (' + soup + ')') : ''),
       price: item.price,
       qty: 1,
-      menuType, // 'food' | 'drinks'
+      menuType,
       group: item.group
     });
   }
   renderCartBadge();
   renderCartItems();
+  showToast('Added: ' + item.name + (soup ? (' (' + soup + ')') : ''));
 }
 
 function changeQty(key, delta){
@@ -418,9 +482,9 @@ function renderCartItems(){
           <p class="text-xs text-navy-800/50">${formatN(c.price)} each</p>
         </div>
         <div class="flex items-center gap-2 shrink-0">
-          <button onclick="changeQty('${c.key}',-1)" class="w-7 h-7 rounded-full border border-navy-800/20 text-sm">−</button>
+          <button data-qty-key="${c.key}" data-qty-delta="-1" class="qty-btn w-7 h-7 rounded-full border border-navy-800/20 text-sm">−</button>
           <span class="text-sm w-5 text-center">${c.qty}</span>
-          <button onclick="changeQty('${c.key}',1)" class="w-7 h-7 rounded-full border border-navy-800/20 text-sm">+</button>
+          <button data-qty-key="${c.key}" data-qty-delta="1" class="qty-btn w-7 h-7 rounded-full border border-navy-800/20 text-sm">+</button>
         </div>
       </div>
     `).join('');
@@ -430,6 +494,12 @@ function renderCartItems(){
   document.getElementById('cartGrandTotal').textContent = formatN(totals.total);
   document.getElementById('checkoutBtn').disabled = cart.length === 0;
 }
+
+document.getElementById('cartItemsList').addEventListener('click', function(e){
+  const btn = e.target.closest('.qty-btn');
+  if(!btn) return;
+  changeQty(btn.getAttribute('data-qty-key'), parseInt(btn.getAttribute('data-qty-delta'), 10));
+});
 
 function openCart(){
   renderCartItems();
@@ -509,12 +579,14 @@ function sendToWhatsApp(order){
   lines.push('Please verify payment and confirm this order. Thank you.');
 
   const message = encodeURIComponent(lines.join('\n'));
-  const phone = (LS.get('kc_settings', settings).whatsapp || settings.whatsapp).replace(/\D/g,'');
+  const currentSettings = LS.get('kc_settings', settings) || settings;
+  const phone = (currentSettings.whatsapp || settings.whatsapp || '').replace(/\D/g,'');
   window.open('https://wa.me/' + phone + '?text=' + message, '_blank');
 }
 
 function openWhatsAppHelp(){
-  const phone = (LS.get('kc_settings', settings).whatsapp || settings.whatsapp).replace(/\D/g,'');
+  const currentSettings = LS.get('kc_settings', settings) || settings;
+  const phone = (currentSettings.whatsapp || settings.whatsapp || '').replace(/\D/g,'');
   const msg = encodeURIComponent("Hello, I need help — I couldn't detect my room number for the room service ordering page.");
   window.open('https://wa.me/' + phone + '?text=' + msg, '_blank');
 }
@@ -537,17 +609,23 @@ function groupBy(items){
 
 function renderMenu(){
   const container = document.getElementById('menuContainer');
-  const menu = (activeTab === 'food' ? foodMenu : drinksMenu).filter(i => i.available !== false);
+  const source = activeTab === 'food' ? foodMenu : drinksMenu;
+  const menu = source.filter(i => i.available !== false);
   const groups = groupBy(menu);
   const groupNames = Object.keys(groups);
+
+  if(groupNames.length === 0){
+    container.innerHTML = '<p class="text-center text-sm text-navy-800/50 py-10">No items available right now. Please try again shortly.</p>';
+    return;
+  }
 
   container.innerHTML = groupNames.map((groupName, gi) => `
     <section class="mb-5">
       <button onclick="toggleAccordion(${gi})" class="w-full flex items-center justify-between py-2 border-b border-navy-800/15">
         <h3 class="font-serif text-base text-navy-800">${groupName}</h3>
-        <span id="chev-${gi}" class="text-navy-800/40 text-sm transition-transform">▾</span>
+        <span id="chev-${gi}" class="text-navy-800/40 text-sm transition-transform" style="transform:${gi===0 ? 'rotate(180deg)' : 'rotate(0deg)'}">▾</span>
       </button>
-      <div id="acc-${gi}" class="accordion-body" style="max-height:${gi===0 ? '4000px' : '0px'}">
+      <div id="acc-${gi}" class="accordion-body" style="max-height:${gi===0 ? '6000px' : '0px'}">
         <div class="pt-2 pb-1">
           ${groups[groupName].map(item => renderItemRow(item, activeTab)).join('')}
         </div>
@@ -560,7 +638,7 @@ function toggleAccordion(gi){
   const body = document.getElementById('acc-' + gi);
   const chev = document.getElementById('chev-' + gi);
   const isOpen = body.style.maxHeight !== '0px';
-  body.style.maxHeight = isOpen ? '0px' : '4000px';
+  body.style.maxHeight = isOpen ? '0px' : '6000px';
   chev.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
 }
 
@@ -576,7 +654,7 @@ function renderItemRow(item, menuType){
             ${SOUP_OPTIONS.map(s => `<option value="${s}">${s}</option>`).join('')}
           </select>
         </div>
-        <button onclick="addFoodWithSoup('${item.id}','${selId}')" class="shrink-0 bg-navy-800 text-white text-xs font-medium px-4 py-2 rounded-full">Add</button>
+        <button type="button" class="add-btn shrink-0 bg-navy-800 text-white text-xs font-medium px-4 py-2 rounded-full" data-menu-type="food" data-item-id="${item.id}" data-soup-select="${selId}">Add</button>
       </div>
     `;
   }
@@ -586,22 +664,32 @@ function renderItemRow(item, menuType){
         <p class="text-sm font-medium">${item.name}</p>
         <p class="text-xs text-navy-800/50">${formatN(item.price)}</p>
       </div>
-      <button onclick="addSimpleItem('${item.id}','${menuType}')" class="shrink-0 bg-navy-800 text-white text-xs font-medium px-4 py-2 rounded-full">Add</button>
+      <button type="button" class="add-btn shrink-0 bg-navy-800 text-white text-xs font-medium px-4 py-2 rounded-full" data-menu-type="${menuType}" data-item-id="${item.id}">Add</button>
     </div>
   `;
 }
 
-function addSimpleItem(itemId, menuType){
+// Single delegated listener for all Add buttons — robust against re-renders
+document.getElementById('menuContainer').addEventListener('click', function(e){
+  const btn = e.target.closest('.add-btn');
+  if(!btn) return;
+  const itemId = btn.getAttribute('data-item-id');
+  const menuType = btn.getAttribute('data-menu-type');
+  const soupSelectId = btn.getAttribute('data-soup-select');
   const menu = menuType === 'food' ? foodMenu : drinksMenu;
   const item = menu.find(i => i.id === itemId);
-  if(item) addToCart(item, menuType, null);
-}
+  if(!item){
+    showToast('Could not add item — please refresh the page.');
+    return;
+  }
+  const soup = soupSelectId ? (document.getElementById(soupSelectId) || {}).value : null;
+  addToCart(item, menuType, soup || null);
 
-function addFoodWithSoup(itemId, selId){
-  const item = foodMenu.find(i => i.id === itemId);
-  const soup = document.getElementById(selId).value;
-  if(item) addToCart(item, 'food', soup);
-}
+  btn.classList.add('added');
+  const originalText = btn.textContent;
+  btn.textContent = 'Added ✓';
+  setTimeout(() => { btn.classList.remove('added'); btn.textContent = originalText; }, 700);
+});
 
 // ---------- Manager: login ----------
 function openManagerLogin(){
@@ -616,7 +704,7 @@ function closeManagerLogin(){
 }
 function attemptManagerLogin(){
   const val = document.getElementById('managerPasswordInput').value;
-  const savedSettings = LS.get('kc_settings', settings);
+  const savedSettings = LS.get('kc_settings', settings) || settings;
   const correct = savedSettings.managerPassword || MANAGER_PASSWORD_DEFAULT;
   if(val === correct){
     closeManagerLogin();
@@ -628,8 +716,8 @@ function attemptManagerLogin(){
 
 // ---------- Manager: dashboard ----------
 function openManagerDashboard(){
-  settings = LS.get('kc_settings', settings);
-  orders = LS.get('kc_orders', []);
+  settings = LS.get('kc_settings', settings) || settings;
+  orders = LS.get('kc_orders', []) || [];
   document.getElementById('managerDashboard').classList.remove('hidden');
   switchMgrTab('orders');
 }
@@ -651,7 +739,7 @@ function switchMgrTab(tab){
 }
 
 function renderMgrOrders(){
-  orders = LS.get('kc_orders', []);
+  orders = LS.get('kc_orders', []) || [];
   const today = new Date().toDateString();
   const todays = orders.filter(o => new Date(o.timestamp).toDateString() === today);
   document.getElementById('statTodayOrders').textContent = todays.length;
@@ -708,7 +796,7 @@ function saveMenuItem(itemId){
 }
 
 function renderMgrSettings(){
-  settings = LS.get('kc_settings', settings);
+  settings = LS.get('kc_settings', settings) || settings;
   document.getElementById('mgrWhatsappInput').value = settings.whatsapp || '';
   document.getElementById('settingsSaved').classList.add('hidden');
 }
@@ -721,7 +809,6 @@ function saveWhatsappSetting(){
 
 // ---------- Init ----------
 detectRoom();
-switchTab('food');
 renderCartBadge();
 </script>
 </body>
