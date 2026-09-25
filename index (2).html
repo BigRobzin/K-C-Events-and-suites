@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
+<title>K&C Royal Suite &amp; Event Place — Room Service</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🥂</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          navy: { DEFAULT: '#0B1F3A', 50:'#eef1f6', 700:'#0F2748', 800:'#0B1F3A', 900:'#081627' },
+          gold: { DEFAULT: '#C9A227', light:'#E4C955' },
+          ivory: '#F7F5EF',
+          bronze: '#8C6D3F'
+        },
+        fontFamily: {
+          serif: ['Fraunces', 'serif'],
+          sans: ['Inter', 'sans-serif']
+        }
+      }
+    }
+  };
+</script>
+<style>
+  :root{
+    --navy:#0B1F3A; --gold:#C9A227; --ivory:#F7F5EF; --bronze:#8C6D3F; --charcoal:#1C2230;
+  }
+  html,body{ background:var(--ivory); font-family:'Inter',sans-serif; color:var(--charcoal); }
+  .font-serif{ font-family:'Fraunces',serif; }
+  ::-webkit-scrollbar{ width:6px; height:6px; }
+  ::-webkit-scrollbar-thumb{ background:#C9A22766; border-radius:4px; }
+  .gold-border{ border-color:var(--gold); }
+  .tab-active{ background:var(--navy); color:#fff; }
+  .tab-inactive{ background:transparent; color:var(--navy); }
+  .sheet{ transition: transform .32s cubic-bezier(.32,.72,0,1); }
+  .sheet-hidden{ transform: translateY(100%); }
+  .fade{ transition: opacity .22s ease; }
+  .scrollbar-none::-webkit-scrollbar{ display:none; }
+  .scrollbar-none{ -ms-overflow-style:none; scrollbar-width:none; }
+  input[type=number]::-webkit-inner-spin-button{ -webkit-appearance:none; }
+  .accordion-body{ max-height:0; overflow:hidden; transition:max-height .3s ease; }
+  .item-row:last-child{ border-bottom:none; }
+  @keyframes pulseRing{ 0%{box-shadow:0 0 0 0 rgba(201,162,39,.45);} 100%{box-shadow:0 0 0 14px rgba(201,162,39,0);} }
+  .pulse{ animation: pulseRing 1.8s infinite; }
+</style>
+</head>
+<body class="min-h-screen pb-28">
+
+<!-- ================= NO ROOM SCREEN ================= -->
+<div id="noRoomScreen" class="hidden fixed inset-0 z-[100] bg-navy-800 flex items-center justify-center px-6">
+  <div class="text-center max-w-sm">
+    <div class="text-5xl mb-5">🥂</div>
+    <h1 class="font-serif text-2xl text-white mb-3">K&amp;C Royal Suite &amp; Event Place</h1>
+    <p class="text-gold text-sm tracking-wide uppercase mb-4">In-Room Ordering</p>
+    <p class="text-white/70 text-sm leading-relaxed">Please scan the QR code placed in your room to view the menu and place an order. If you believe this is an error, kindly contact the front desk.</p>
+    <button onclick="openWhatsAppHelp()" class="mt-8 inline-block bg-gold text-navy-900 font-semibold text-sm px-6 py-3 rounded-full">Message the Front Desk</button>
+  </div>
+</div>
+
+<!-- ================= APP ROOT ================= -->
+<div id="appRoot" class="hidden">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-30 bg-navy-800 text-white shadow-lg">
+    <div class="px-4 pt-4 pb-3 flex items-start justify-between">
+      <div>
+        <p class="text-[10px] tracking-[.18em] text-gold/90">ROOM SERVICE</p>
+        <h1 class="font-serif text-lg leading-tight mt-0.5">K&amp;C Royal Suite<br> &amp; Event Place</h1>
+      </div>
+      <div class="text-right shrink-0 pl-3">
+        <div id="roomBadge" class="bg-gold text-navy-900 rounded-lg px-3 py-1.5 font-semibold text-sm">Room —</div>
+        <p id="categoryBadge" class="text-white/60 text-xs mt-1"></p>
+      </div>
+    </div>
+    <!-- Tabs -->
+    <div class="px-4 pb-3 flex gap-2">
+      <button id="tabFoodBtn" onclick="switchTab('food')" class="flex-1 py-2.5 rounded-full text-sm font-medium border border-gold/40 transition">Food Menu</button>
+      <button id="tabDrinksBtn" onclick="switchTab('drinks')" class="flex-1 py-2.5 rounded-full text-sm font-medium border border-gold/40 transition">Drinks Menu</button>
+    </div>
+  </header>
+
+  <!-- Menu content -->
+  <main id="menuContainer" class="px-4 pt-4 max-w-2xl mx-auto"></main>
+
+  <!-- Floating cart button -->
+  <button id="cartFab" onclick="openCart()" class="hidden fixed bottom-5 right-5 z-40 bg-navy-800 text-white rounded-full shadow-2xl px-5 py-4 items-center gap-2 pulse">
+    <span class="text-xl">🛒</span>
+    <span id="cartFabCount" class="bg-gold text-navy-900 rounded-full text-xs font-bold w-5 h-5 flex items-center justify-center">0</span>
+    <span id="cartFabTotal" class="font-serif text-sm hidden sm:inline">₦0</span>
+  </button>
+
+  <!-- Cart drawer -->
+  <div id="cartOverlay" class="fixed inset-0 bg-black/50 z-40 hidden fade opacity-0" onclick="closeCart()"></div>
+  <div id="cartDrawer" class="sheet sheet-hidden fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl max-w-2xl mx-auto shadow-2xl max-h-[85vh] flex flex-col">
+    <div class="flex items-center justify-between px-5 pt-5 pb-2">
+      <h2 class="font-serif text-xl">Your Order</h2>
+      <button onclick="closeCart()" class="text-navy-800/50 text-2xl leading-none">&times;</button>
+    </div>
+    <div id="cartItemsList" class="px-5 overflow-y-auto flex-1 divide-y divide-navy-800/10"></div>
+    <div class="px-5 pt-3 pb-5 border-t border-navy-800/10 bg-white rounded-t-3xl">
+      <div class="flex justify-between text-sm text-navy-800/60 mb-1"><span>Food Subtotal</span><span id="cartFoodSub">₦0</span></div>
+      <div class="flex justify-between text-sm text-navy-800/60 mb-2"><span>Drinks Subtotal</span><span id="cartDrinksSub">₦0</span></div>
+      <div class="flex justify-between font-serif text-lg mb-4"><span>Total</span><span id="cartGrandTotal">₦0</span></div>
+      <button onclick="openCheckout()" id="checkoutBtn" class="w-full bg-gold text-navy-900 font-semibold py-3.5 rounded-full disabled:opacity-40" disabled>Proceed to Checkout</button>
+    </div>
+  </div>
+
+  <!-- Checkout modal -->
+  <div id="checkoutOverlay" class="fixed inset-0 bg-black/60 z-[60] hidden items-center justify-center px-4">
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div class="p-5 border-b border-navy-800/10 flex items-center justify-between sticky top-0 bg-white">
+        <h2 class="font-serif text-xl">Payment Details</h2>
+        <button onclick="closeCheckout()" class="text-navy-800/50 text-2xl leading-none">&times;</button>
+      </div>
+      <div class="p-5 space-y-4">
+        <p class="text-sm text-navy-800/70">Please make payment to the account(s) below, then confirm — your order will be sent to reception via WhatsApp for verification.</p>
+
+        <div id="kitchenPayBlock" class="hidden border border-navy-800/15 rounded-xl p-4">
+          <p class="text-xs tracking-wide text-bronze font-semibold mb-2">KITCHEN ACCOUNT — FOOD</p>
+          <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Amount</span><span id="kitchenAmount" class="font-semibold">₦0</span></div>
+          <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Bank</span><span>Moniepoint</span></div>
+          <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Account No.</span><span class="font-mono">5010792977</span></div>
+          <div class="flex justify-between text-sm"><span class="text-navy-800/60">Account Name</span><span class="text-right">K-C Hospitality Enterprises</span></div>
+        </div>
+
+        <div id="barPayBlock" class="hidden border border-navy-800/15 rounded-xl p-4">
+          <p class="text-xs tracking-wide text-bronze font-semibold mb-2">BAR ACCOUNT — DRINKS</p>
+          <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Amount</span><span id="barAmount" class="font-semibold">₦0</span></div>
+          <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Bank</span><span>Moniepoint</span></div>
+          <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Account No.</span><span class="font-mono">5523006613</span></div>
+          <div class="flex justify-between text-sm"><span class="text-navy-800/60">Account Name</span><span class="text-right">K-C Hospitality Enterprises</span></div>
+        </div>
+
+        <button onclick="confirmPayment()" class="w-full bg-navy-800 text-white font-semibold py-3.5 rounded-full mt-2">I Have Made Payment</button>
+        <p class="text-[11px] text-center text-navy-800/40">You'll be redirected to WhatsApp to notify reception.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order sent confirmation -->
+  <div id="successOverlay" class="fixed inset-0 bg-black/60 z-[60] hidden items-center justify-center px-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 text-center">
+      <div class="text-4xl mb-3">✅</div>
+      <h2 class="font-serif text-xl mb-2">Order Sent</h2>
+      <p class="text-sm text-navy-800/70 mb-5">Reception has been notified via WhatsApp. Your order will be delivered to Room <span id="successRoom"></span> shortly.</p>
+      <button onclick="closeSuccess()" class="w-full bg-gold text-navy-900 font-semibold py-3 rounded-full">Order More</button>
+    </div>
+  </div>
+
+  <!-- Footer / staff link -->
+  <footer class="text-center py-6">
+    <button onclick="openManagerLogin()" class="text-[11px] text-navy-800/30 underline">Staff Login</button>
+  </footer>
+</div>
+
+<!-- ================= MANAGER LOGIN ================= -->
+<div id="managerLoginOverlay" class="fixed inset-0 bg-black/60 z-[70] hidden items-center justify-center px-4">
+  <div class="bg-white rounded-2xl max-w-xs w-full p-6">
+    <h2 class="font-serif text-lg mb-1">Manager Access</h2>
+    <p class="text-xs text-navy-800/50 mb-4">Enter the manager password to continue.</p>
+    <input id="managerPasswordInput" type="password" placeholder="Password" class="w-full border border-navy-800/20 rounded-lg px-3 py-2.5 text-sm mb-2 outline-none focus:border-gold">
+    <p id="managerLoginError" class="text-xs text-red-500 mb-2 hidden">Incorrect password.</p>
+    <div class="flex gap-2 mt-2">
+      <button onclick="closeManagerLogin()" class="flex-1 py-2.5 rounded-full border border-navy-800/20 text-sm">Cancel</button>
+      <button onclick="attemptManagerLogin()" class="flex-1 py-2.5 rounded-full bg-navy-800 text-white text-sm">Enter</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MANAGER DASHBOARD ================= -->
+<div id="managerDashboard" class="hidden fixed inset-0 z-[80] bg-ivory overflow-y-auto">
+  <div class="sticky top-0 bg-navy-800 text-white px-4 py-4 flex items-center justify-between z-10">
+    <h1 class="font-serif text-lg">Manager Dashboard</h1>
+    <button onclick="closeManagerDashboard()" class="text-white/70 text-sm border border-white/30 rounded-full px-3 py-1">Exit</button>
+  </div>
+  <div class="px-4 pt-4 flex gap-2 max-w-3xl mx-auto">
+    <button id="mgrTabOrdersBtn" onclick="switchMgrTab('orders')" class="flex-1 py-2 rounded-full text-sm border border-navy-800/20">Orders</button>
+    <button id="mgrTabMenuBtn" onclick="switchMgrTab('menu')" class="flex-1 py-2 rounded-full text-sm border border-navy-800/20">Menu</button>
+    <button id="mgrTabSettingsBtn" onclick="switchMgrTab('settings')" class="flex-1 py-2 rounded-full text-sm border border-navy-800/20">Settings</button>
+  </div>
+
+  <div class="max-w-3xl mx-auto px-4 py-5">
+    <!-- Orders panel -->
+    <div id="mgrPanelOrders">
+      <div class="grid grid-cols-3 gap-2 mb-5">
+        <div class="bg-white rounded-xl p-3 text-center border border-navy-800/10">
+          <p class="text-xl font-serif" id="statTodayOrders">0</p>
+          <p class="text-[10px] text-navy-800/50 mt-1">Orders Today</p>
+        </div>
+        <div class="bg-white rounded-xl p-3 text-center border border-navy-800/10">
+          <p class="text-xl font-serif" id="statTodayRevenue">₦0</p>
+          <p class="text-[10px] text-navy-800/50 mt-1">Revenue Today</p>
+        </div>
+        <div class="bg-white rounded-xl p-3 text-center border border-navy-800/10">
+          <p class="text-xl font-serif" id="statAllOrders">0</p>
+          <p class="text-[10px] text-navy-800/50 mt-1">All-Time Orders</p>
+        </div>
+      </div>
+      <div id="mgrOrdersList" class="space-y-3"></div>
+    </div>
+
+    <!-- Menu panel -->
+    <div id="mgrPanelMenu" class="hidden">
+      <div class="flex gap-2 mb-4">
+        <button id="mgrMenuFoodBtn" onclick="switchMgrMenuType('food')" class="flex-1 py-2 rounded-full text-sm tab-active">Food Items</button>
+        <button id="mgrMenuDrinksBtn" onclick="switchMgrMenuType('drinks')" class="flex-1 py-2 rounded-full text-sm tab-inactive border border-navy-800/20">Drink Items</button>
+      </div>
+      <div id="mgrMenuEditList" class="space-y-2"></div>
+    </div>
+
+    <!-- Settings panel -->
+    <div id="mgrPanelSettings" class="hidden">
+      <label class="block text-xs text-navy-800/60 mb-1">Receptionist WhatsApp Number</label>
+      <input id="mgrWhatsappInput" type="text" class="w-full border border-navy-800/20 rounded-lg px-3 py-2.5 text-sm mb-3">
+      <button onclick="saveWhatsappSetting()" class="bg-navy-800 text-white text-sm px-5 py-2.5 rounded-full">Save</button>
+      <p id="settingsSaved" class="text-xs text-green-600 mt-2 hidden">Saved.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   K&C ROYAL SUITE & EVENT PLACE — ROOM SERVICE APP
+   ============================================================ */
+
+const MANAGER_PASSWORD_DEFAULT = "KCManager2026";
+
+// ---------- Room map ----------
+const ROOM_MAP = {};
+[104,105,113].forEach(r => ROOM_MAP[r] = "Standard");
+[101,102,103,106,107,108,109,110,111,112,114,117,118,119].forEach(r => ROOM_MAP[r] = "Deluxe");
+[115,116].forEach(r => ROOM_MAP[r] = "Classic");
+[120,121,122,123,124].forEach(r => ROOM_MAP[r] = "Executive Deluxe");
+
+// ---------- Seed data ----------
+const SOUP_OPTIONS = ["Egusi","Vegetable","Okazi","Afam","Banga","Okro","Ogbono"];
+
+function seedFoodMenu(){
+  let id = 1;
+  const items = [];
+  const push = (name, price, group, hasSoup) => { items.push({ id: 'f'+(id++), name, price, group, hasSoup: !!hasSoup, available: true }); };
+
+  // Pepper Soup
+  push("Chicken Pepper Soup", 5000, "Pepper Soup");
+  push("Catfish Pepper Soup", 15000, "Pepper Soup");
+  push("Turkey Pepper Soup", 6500, "Pepper Soup");
+  push("Cow Tail Pepper Soup", 5000, "Pepper Soup");
+  push("Goat Meat Pepper Soup", 5000, "Pepper Soup");
+
+  // Main Dish (choice of swallow/soup)
+  push("Beef", 6500, "Main Dish", true);
+  push("Kpomo", 6500, "Main Dish", true);
+  push("Chicken", 9000, "Main Dish", true);
+  push("Turkey", 10000, "Main Dish", true);
+  push("Goat Meat", 8500, "Main Dish", true);
+
+  // Rice / Pasta
+  push("Chinese Fried Rice", 15000, "Rice / Pasta");
+  push("Jollof Rice & Chicken", 9000, "Rice / Pasta");
+  push("Jollof Rice & Turkey", 10000, "Rice / Pasta");
+  push("Fried Rice & Chicken", 9500, "Rice / Pasta");
+  push("Fried Rice & Turkey", 10500, "Rice / Pasta");
+  push("White Rice & Stew", 4000, "Rice / Pasta");
+  push("Chicken & Chips", 7000, "Rice / Pasta");
+  push("Yam & Egg Sauce", 5000, "Rice / Pasta");
+  push("Spaghetti Jollof", 4000, "Rice / Pasta");
+  push("Indomie & Egg", 4000, "Rice / Pasta");
+  push("Basmati Fried Rice", 10500, "Rice / Pasta");
+  push("Basmati Jollof Rice", 10500, "Rice / Pasta");
+
+  // Specials
+  push("Isiewu Half Pot", 7500, "Specials");
+  push("Isiewu Full Pot", 15000, "Specials");
+  push("Nkwobi", 5000, "Specials");
+  push("Fish Barbecue", 16000, "Specials");
+  push("Asun", 2000, "Specials");
+
+  // Extras
+  push("White Rice", 2000, "Extras");
+  push("Peppered Beef/Kpomo", 1000, "Extras");
+  push("Extra Soup", 2000, "Extras");
+  push("Peppered Chicken", 5000, "Extras");
+  push("Peppered Turkey", 6500, "Extras");
+  push("Boiled Yam & Stew", 5000, "Extras");
+  push("Grilled Chicken", 6000, "Extras");
+  push("Peppered Kpanla Fish", 1500, "Extras");
+  push("Potato & Egg Sauce", 5000, "Extras");
+  push("Egg Sauce", 2500, "Extras");
+
+  return items;
+}
+
+function seedDrinksMenu(){
+  let id = 1;
+  const items = [];
+  const push = (name, price, group) => { items.push({ id: 'd'+(id++), name, price, group, available: true }); };
+
+  const beers = [["Star",1500],["33 Export",1500],["Goldberg",1500],["Budweiser",1500],["Big Stout",2000],["Medium Stout",1500],["Legend",1500],["Black Goldberg",1500],["Flying Fish",1500],["Budweiser Royale",1500],["Small Heineken",1200],["Trophy",1500],["Orijin Beer",1500],["Heineken",2000],["Turbo King",1500],["Tiger Beer",1500],["Desperado",1500],["Trophy Stout",1200],["Double Black",1200],["Small Stout",1200],["Gulder",1500],["Big Smirnoff Ice",2000],["Small Smirnoff Ice",1000],["Star Radler",1000],["Guinness Smooth",1200],["Castle Lite",1500]];
+  beers.forEach(([n,p]) => push(n,p,"Beers"));
+
+  const energy = [["Medium Action Bitter",3000],["Big Action Bitter",7000],["Big Orijin Bitter",7000],["Bullet",2500],["Power Horse",2500],["Monster",2500],["Climax",2000],["Red Bull",2500],["Predator",1000],["Fearless",1000],["Plastic Action Bitter",1500],["Pet Orijin",1500],["Long Jack",2000]];
+  energy.forEach(([n,p]) => push(n,p,"Energy Drinks / Bitters"));
+
+  const soft = [["Water",500],["Mineral Plastic",700],["Malta Guinness",1200],["Maltina",1000],["Big Cedaa Yoghurt",2000],["Small Cedaa Yoghurt",1500],["Frutta Juice",3000],["Fayrouz Bottle",1000],["Hollandia Yoghurt",3000],["5 Alive",3000],["Schweppes",1500],["Chivita Active",3000],["Lacoco",1000]];
+  soft.forEach(([n,p]) => push(n,p,"Soft Drinks / Water"));
+
+  const wine = [["Escudo Rojo",35000],["Red Walker",25000],["Big Best Whisky",10000],["Medium Vodka X1",3000],["Small Best Whisky",3000],["Small Best Cream",3000],["Small Ivory Cream",1500],["De-Rock",1500],["Squadron",1500],["Chelsea",1500],["Skirt",5000],["Baron",12000],["Small Seagram",3000],["Carlo Rossi",15000],["Big Gordon Gin",10000],["Skyy Vodka",35000],["Hennessy VSOP",110000],["Martel Swift VSOP",120000],["Small Magic Moment",3000],["Big Magic Moment",10000],["Small Royal Circle",3500],["Glenfiddich",120000],["Olmeca Tequila",45000],["Big Best Irish Cream",10000],["Hennessy VS",85000],["Martel VS",70000],["Big Jameson Green",35000],["Sierra Tequila",35000],["Remy Martins",90000],["Bacardi",35000],["Big Campari",30000],["Four Cousins",15000],["Captain Morgan",10000],["Big Smirnoff Vodka",10000],["Big Seagram",10000],["4th Street",12000],["Small Campari",10000],["Big Black Jameson",55000],["Andre Rose",20000],["St Remy",110000],["Edwards",10000],["Small Jameson",15000],["Big Royal Circle",10000],["Jack Daniels",35000],["Red Label",25000],["Williams Lawson",25000],["Ivory Cream",7000],["Chamdor",10000],["Belaire",70000],["Don Royal",10000],["Medium Gordon Gin",3000]];
+  wine.forEach(([n,p]) => push(n,p,"Wine / Whisky / Brandy"));
+
+  return items;
+}
+
+// ---------- Storage helpers ----------
+const LS = {
+  get(key, fallback){ try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; } },
+  set(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+};
+
+function initStorage(){
+  if(!LS.get('kc_food_menu')) LS.set('kc_food_menu', seedFoodMenu());
+  if(!LS.get('kc_drinks_menu')) LS.set('kc_drinks_menu', seedDrinksMenu());
+  if(!LS.get('kc_settings')) LS.set('kc_settings', { whatsapp: "2347080716547", managerPassword: MANAGER_PASSWORD_DEFAULT });
+  if(!LS.get('kc_orders')) LS.set('kc_orders', []);
+}
+initStorage();
+
+let foodMenu = LS.get('kc_food_menu', []);
+let drinksMenu = LS.get('kc_drinks_menu', []);
+let settings = LS.get('kc_settings', {});
+let orders = LS.get('kc_orders', []);
+
+// ---------- Room detection ----------
+let currentRoom = null;
+let currentCategory = null;
+
+function detectRoom(){
+  const params = new URLSearchParams(window.location.search);
+  const roomParam = params.get('room');
+  const roomNum = parseInt(roomParam, 10);
+  if(roomParam && ROOM_MAP[roomNum]){
+    currentRoom = roomNum;
+    currentCategory = ROOM_MAP[roomNum];
+    document.getElementById('noRoomScreen').classList.add('hidden');
+    document.getElementById('appRoot').classList.remove('hidden');
+    document.getElementById('roomBadge').textContent = 'Room ' + roomNum;
+    document.getElementById('categoryBadge').textContent = currentCategory + ' Room';
+  } else {
+    document.getElementById('appRoot').classList.add('hidden');
+    document.getElementById('noRoomScreen').classList.remove('hidden');
+  }
+}
+
+// ---------- Cart ----------
+let cart = []; // {itemId, name, price, qty, menuType, group, soup}
+
+function formatN(n){ return '₦' + Number(n).toLocaleString('en-NG'); }
+
+function addToCart(item, menuType, soup){
+  const key = item.id + (soup ? ('__'+soup) : '');
+  const existing = cart.find(c => c.key === key);
+  if(existing){
+    existing.qty += 1;
+  } else {
+    cart.push({
+      key,
+      itemId: item.id,
+      name: item.name + (soup ? (' (' + soup + ')') : ''),
+      price: item.price,
+      qty: 1,
+      menuType, // 'food' | 'drinks'
+      group: item.group
+    });
+  }
+  renderCartBadge();
+  renderCartItems();
+}
+
+function changeQty(key, delta){
+  const line = cart.find(c => c.key === key);
+  if(!line) return;
+  line.qty += delta;
+  if(line.qty <= 0) cart = cart.filter(c => c.key !== key);
+  renderCartBadge();
+  renderCartItems();
+}
+
+function cartTotals(){
+  let food = 0, drinks = 0;
+  cart.forEach(c => { if(c.menuType === 'food') food += c.price * c.qty; else drinks += c.price * c.qty; });
+  return { food, drinks, total: food + drinks };
+}
+
+function renderCartBadge(){
+  const count = cart.reduce((s,c) => s + c.qty, 0);
+  const totals = cartTotals();
+  document.getElementById('cartFabCount').textContent = count;
+  document.getElementById('cartFabTotal').textContent = formatN(totals.total);
+  document.getElementById('cartFab').classList.toggle('hidden', count === 0);
+  document.getElementById('cartFab').classList.toggle('flex', count > 0);
+}
+
+function renderCartItems(){
+  const list = document.getElementById('cartItemsList');
+  const totals = cartTotals();
+  if(cart.length === 0){
+    list.innerHTML = '<p class="text-center text-sm text-navy-800/40 py-10">Your cart is empty.</p>';
+  } else {
+    list.innerHTML = cart.map(c => `
+      <div class="item-row py-3 flex items-center justify-between gap-3 border-b border-navy-800/10">
+        <div class="min-w-0">
+          <p class="text-sm font-medium truncate">${c.name}</p>
+          <p class="text-xs text-navy-800/50">${formatN(c.price)} each</p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button onclick="changeQty('${c.key}',-1)" class="w-7 h-7 rounded-full border border-navy-800/20 text-sm">−</button>
+          <span class="text-sm w-5 text-center">${c.qty}</span>
+          <button onclick="changeQty('${c.key}',1)" class="w-7 h-7 rounded-full border border-navy-800/20 text-sm">+</button>
+        </div>
+      </div>
+    `).join('');
+  }
+  document.getElementById('cartFoodSub').textContent = formatN(totals.food);
+  document.getElementById('cartDrinksSub').textContent = formatN(totals.drinks);
+  document.getElementById('cartGrandTotal').textContent = formatN(totals.total);
+  document.getElementById('checkoutBtn').disabled = cart.length === 0;
+}
+
+function openCart(){
+  renderCartItems();
+  document.getElementById('cartOverlay').classList.remove('hidden');
+  requestAnimationFrame(() => document.getElementById('cartOverlay').classList.remove('opacity-0'));
+  document.getElementById('cartDrawer').classList.remove('sheet-hidden');
+}
+function closeCart(){
+  document.getElementById('cartOverlay').classList.add('opacity-0');
+  document.getElementById('cartDrawer').classList.add('sheet-hidden');
+  setTimeout(() => document.getElementById('cartOverlay').classList.add('hidden'), 220);
+}
+
+// ---------- Checkout ----------
+function openCheckout(){
+  const totals = cartTotals();
+  document.getElementById('kitchenPayBlock').classList.toggle('hidden', totals.food === 0);
+  document.getElementById('barPayBlock').classList.toggle('hidden', totals.drinks === 0);
+  document.getElementById('kitchenAmount').textContent = formatN(totals.food);
+  document.getElementById('barAmount').textContent = formatN(totals.drinks);
+  document.getElementById('checkoutOverlay').classList.remove('hidden');
+  document.getElementById('checkoutOverlay').classList.add('flex');
+}
+function closeCheckout(){
+  document.getElementById('checkoutOverlay').classList.add('hidden');
+  document.getElementById('checkoutOverlay').classList.remove('flex');
+}
+
+function confirmPayment(){
+  const totals = cartTotals();
+  const order = {
+    id: 'ORD-' + Date.now(),
+    timestamp: new Date().toISOString(),
+    room: currentRoom,
+    category: currentCategory,
+    items: cart.map(c => ({ name: c.name, qty: c.qty, price: c.price, subtotal: c.price*c.qty, menuType: c.menuType })),
+    kitchenTotal: totals.food,
+    barTotal: totals.drinks,
+    total: totals.total
+  };
+  orders.push(order);
+  LS.set('kc_orders', orders);
+
+  sendToWhatsApp(order);
+
+  closeCheckout();
+  closeCart();
+  document.getElementById('successRoom').textContent = currentRoom;
+  document.getElementById('successOverlay').classList.remove('hidden');
+  document.getElementById('successOverlay').classList.add('flex');
+
+  cart = [];
+  renderCartBadge();
+  renderCartItems();
+}
+
+function closeSuccess(){
+  document.getElementById('successOverlay').classList.add('hidden');
+  document.getElementById('successOverlay').classList.remove('flex');
+}
+
+function sendToWhatsApp(order){
+  const lines = [];
+  lines.push('*New Room Service Order*');
+  lines.push('Room: ' + order.room + ' (' + order.category + ')');
+  lines.push('');
+  lines.push('*Items Ordered:*');
+  order.items.forEach(it => {
+    lines.push('• ' + it.name + ' x' + it.qty + ' — ' + formatN(it.subtotal));
+  });
+  lines.push('');
+  if(order.kitchenTotal > 0) lines.push('Kitchen (Food) Total: ' + formatN(order.kitchenTotal) + ' — paid to Moniepoint 5010792977');
+  if(order.barTotal > 0) lines.push('Bar (Drinks) Total: ' + formatN(order.barTotal) + ' — paid to Moniepoint 5523006613');
+  lines.push('');
+  lines.push('Grand Total: ' + formatN(order.total));
+  lines.push('');
+  lines.push('Please verify payment and confirm this order. Thank you.');
+
+  const message = encodeURIComponent(lines.join('\n'));
+  const phone = (LS.get('kc_settings', settings).whatsapp || settings.whatsapp).replace(/\D/g,'');
+  window.open('https://wa.me/' + phone + '?text=' + message, '_blank');
+}
+
+function openWhatsAppHelp(){
+  const phone = (LS.get('kc_settings', settings).whatsapp || settings.whatsapp).replace(/\D/g,'');
+  const msg = encodeURIComponent("Hello, I need help — I couldn't detect my room number for the room service ordering page.");
+  window.open('https://wa.me/' + phone + '?text=' + msg, '_blank');
+}
+
+// ---------- Menu rendering ----------
+let activeTab = 'food';
+
+function switchTab(tab){
+  activeTab = tab;
+  document.getElementById('tabFoodBtn').className = 'flex-1 py-2.5 rounded-full text-sm font-medium border border-gold/40 transition ' + (tab==='food' ? 'bg-gold text-navy-900' : 'text-white/80');
+  document.getElementById('tabDrinksBtn').className = 'flex-1 py-2.5 rounded-full text-sm font-medium border border-gold/40 transition ' + (tab==='drinks' ? 'bg-gold text-navy-900' : 'text-white/80');
+  renderMenu();
+}
+
+function groupBy(items){
+  const groups = {};
+  items.forEach(it => { (groups[it.group] = groups[it.group] || []).push(it); });
+  return groups;
+}
+
+function renderMenu(){
+  const container = document.getElementById('menuContainer');
+  const menu = (activeTab === 'food' ? foodMenu : drinksMenu).filter(i => i.available !== false);
+  const groups = groupBy(menu);
+  const groupNames = Object.keys(groups);
+
+  container.innerHTML = groupNames.map((groupName, gi) => `
+    <section class="mb-5">
+      <button onclick="toggleAccordion(${gi})" class="w-full flex items-center justify-between py-2 border-b border-navy-800/15">
+        <h3 class="font-serif text-base text-navy-800">${groupName}</h3>
+        <span id="chev-${gi}" class="text-navy-800/40 text-sm transition-transform">▾</span>
+      </button>
+      <div id="acc-${gi}" class="accordion-body" style="max-height:${gi===0 ? '4000px' : '0px'}">
+        <div class="pt-2 pb-1">
+          ${groups[groupName].map(item => renderItemRow(item, activeTab)).join('')}
+        </div>
+      </div>
+    </section>
+  `).join('');
+}
+
+function toggleAccordion(gi){
+  const body = document.getElementById('acc-' + gi);
+  const chev = document.getElementById('chev-' + gi);
+  const isOpen = body.style.maxHeight !== '0px';
+  body.style.maxHeight = isOpen ? '0px' : '4000px';
+  chev.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+
+function renderItemRow(item, menuType){
+  if(item.hasSoup){
+    const selId = 'soup-' + item.id;
+    return `
+      <div class="flex items-center justify-between gap-3 py-3 border-b border-navy-800/8">
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-medium">${item.name}</p>
+          <p class="text-xs text-navy-800/50 mb-1.5">${formatN(item.price)}</p>
+          <select id="${selId}" class="text-xs border border-navy-800/20 rounded-lg px-2 py-1.5 w-full max-w-[180px]">
+            ${SOUP_OPTIONS.map(s => `<option value="${s}">${s}</option>`).join('')}
+          </select>
+        </div>
+        <button onclick="addFoodWithSoup('${item.id}','${selId}')" class="shrink-0 bg-navy-800 text-white text-xs font-medium px-4 py-2 rounded-full">Add</button>
+      </div>
+    `;
+  }
+  return `
+    <div class="flex items-center justify-between gap-3 py-3 border-b border-navy-800/8">
+      <div class="min-w-0">
+        <p class="text-sm font-medium">${item.name}</p>
+        <p class="text-xs text-navy-800/50">${formatN(item.price)}</p>
+      </div>
+      <button onclick="addSimpleItem('${item.id}','${menuType}')" class="shrink-0 bg-navy-800 text-white text-xs font-medium px-4 py-2 rounded-full">Add</button>
+    </div>
+  `;
+}
+
+function addSimpleItem(itemId, menuType){
+  const menu = menuType === 'food' ? foodMenu : drinksMenu;
+  const item = menu.find(i => i.id === itemId);
+  if(item) addToCart(item, menuType, null);
+}
+
+function addFoodWithSoup(itemId, selId){
+  const item = foodMenu.find(i => i.id === itemId);
+  const soup = document.getElementById(selId).value;
+  if(item) addToCart(item, 'food', soup);
+}
+
+// ---------- Manager: login ----------
+function openManagerLogin(){
+  document.getElementById('managerLoginOverlay').classList.remove('hidden');
+  document.getElementById('managerLoginOverlay').classList.add('flex');
+  document.getElementById('managerPasswordInput').value = '';
+  document.getElementById('managerLoginError').classList.add('hidden');
+}
+function closeManagerLogin(){
+  document.getElementById('managerLoginOverlay').classList.add('hidden');
+  document.getElementById('managerLoginOverlay').classList.remove('flex');
+}
+function attemptManagerLogin(){
+  const val = document.getElementById('managerPasswordInput').value;
+  const savedSettings = LS.get('kc_settings', settings);
+  const correct = savedSettings.managerPassword || MANAGER_PASSWORD_DEFAULT;
+  if(val === correct){
+    closeManagerLogin();
+    openManagerDashboard();
+  } else {
+    document.getElementById('managerLoginError').classList.remove('hidden');
+  }
+}
+
+// ---------- Manager: dashboard ----------
+function openManagerDashboard(){
+  settings = LS.get('kc_settings', settings);
+  orders = LS.get('kc_orders', []);
+  document.getElementById('managerDashboard').classList.remove('hidden');
+  switchMgrTab('orders');
+}
+function closeManagerDashboard(){
+  document.getElementById('managerDashboard').classList.add('hidden');
+}
+
+let mgrTab = 'orders';
+function switchMgrTab(tab){
+  mgrTab = tab;
+  ['orders','menu','settings'].forEach(t => {
+    document.getElementById('mgrTab' + t.charAt(0).toUpperCase()+t.slice(1) + 'Btn').className =
+      'flex-1 py-2 rounded-full text-sm border border-navy-800/20 ' + (t===tab ? 'bg-navy-800 text-white' : '');
+    document.getElementById('mgrPanel' + t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle('hidden', t!==tab);
+  });
+  if(tab === 'orders') renderMgrOrders();
+  if(tab === 'menu') { mgrMenuType = 'food'; renderMgrMenuEditor(); }
+  if(tab === 'settings') renderMgrSettings();
+}
+
+function renderMgrOrders(){
+  orders = LS.get('kc_orders', []);
+  const today = new Date().toDateString();
+  const todays = orders.filter(o => new Date(o.timestamp).toDateString() === today);
+  document.getElementById('statTodayOrders').textContent = todays.length;
+  document.getElementById('statTodayRevenue').textContent = formatN(todays.reduce((s,o)=>s+o.total,0));
+  document.getElementById('statAllOrders').textContent = orders.length;
+
+  const list = document.getElementById('mgrOrdersList');
+  if(orders.length === 0){
+    list.innerHTML = '<p class="text-sm text-navy-800/40 text-center py-10">No orders logged yet.</p>';
+    return;
+  }
+  list.innerHTML = orders.slice().reverse().map(o => `
+    <div class="bg-white border border-navy-800/10 rounded-xl p-4">
+      <div class="flex justify-between items-start mb-1">
+        <p class="font-medium text-sm">Room ${o.room} <span class="text-navy-800/40 font-normal">(${o.category})</span></p>
+        <p class="text-xs text-navy-800/40">${new Date(o.timestamp).toLocaleString('en-NG')}</p>
+      </div>
+      <p class="text-xs text-navy-800/60 mb-2">${o.items.map(i => i.name + ' x' + i.qty).join(', ')}</p>
+      <p class="text-sm font-semibold">${formatN(o.total)}</p>
+    </div>
+  `).join('');
+}
+
+let mgrMenuType = 'food';
+function switchMgrMenuType(type){
+  mgrMenuType = type;
+  document.getElementById('mgrMenuFoodBtn').className = 'flex-1 py-2 rounded-full text-sm ' + (type==='food' ? 'tab-active' : 'tab-inactive border border-navy-800/20');
+  document.getElementById('mgrMenuDrinksBtn').className = 'flex-1 py-2 rounded-full text-sm ' + (type==='drinks' ? 'tab-active' : 'tab-inactive border border-navy-800/20');
+  renderMgrMenuEditor();
+}
+
+function renderMgrMenuEditor(){
+  const menu = mgrMenuType === 'food' ? foodMenu : drinksMenu;
+  const list = document.getElementById('mgrMenuEditList');
+  list.innerHTML = menu.map(item => `
+    <div class="bg-white border border-navy-800/10 rounded-xl p-3 flex items-center gap-2">
+      <input value="${item.name.replace(/"/g,'&quot;')}" id="name-${item.id}" class="flex-1 text-sm border border-navy-800/15 rounded-lg px-2 py-2 min-w-0">
+      <input type="number" value="${item.price}" id="price-${item.id}" class="w-24 text-sm border border-navy-800/15 rounded-lg px-2 py-2">
+      <button onclick="saveMenuItem('${item.id}')" class="text-xs bg-navy-800 text-white px-3 py-2 rounded-lg shrink-0">Save</button>
+    </div>
+  `).join('');
+}
+
+function saveMenuItem(itemId){
+  const menu = mgrMenuType === 'food' ? foodMenu : drinksMenu;
+  const item = menu.find(i => i.id === itemId);
+  if(!item) return;
+  const newName = document.getElementById('name-'+itemId).value.trim();
+  const newPrice = parseFloat(document.getElementById('price-'+itemId).value);
+  if(newName) item.name = newName;
+  if(!isNaN(newPrice)) item.price = newPrice;
+  if(mgrMenuType === 'food') LS.set('kc_food_menu', foodMenu); else LS.set('kc_drinks_menu', drinksMenu);
+  renderMenu();
+}
+
+function renderMgrSettings(){
+  settings = LS.get('kc_settings', settings);
+  document.getElementById('mgrWhatsappInput').value = settings.whatsapp || '';
+  document.getElementById('settingsSaved').classList.add('hidden');
+}
+function saveWhatsappSetting(){
+  const val = document.getElementById('mgrWhatsappInput').value.replace(/\D/g,'');
+  settings.whatsapp = val;
+  LS.set('kc_settings', settings);
+  document.getElementById('settingsSaved').classList.remove('hidden');
+}
+
+// ---------- Init ----------
+detectRoom();
+switchTab('food');
+renderCartBadge();
+</script>
+</body>
+</html>
