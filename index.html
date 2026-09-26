@@ -305,53 +305,62 @@ const ROOM_MAP = {};
 
 // ---------- Seed data ----------
 const SOUP_OPTIONS = ["Egusi","Vegetable","Okazi","Afam","Banga","Okro","Ogbono"];
+const SWALLOW_OPTIONS = ["Semo","Poundo","Eba"];
 
 function seedFoodMenu(){
   let id = 1;
   const items = [];
   const push = (name, price, group, hasSoup) => { items.push({ id: 'f'+(id++), name, price, group, hasSoup: !!hasSoup, available: true }); };
 
-  push("Chicken Pepper Soup", 5000, "Pepper Soup");
-  push("Catfish Pepper Soup", 15000, "Pepper Soup");
-  push("Turkey Pepper Soup", 6500, "Pepper Soup");
-  push("Cow Tail Pepper Soup", 5000, "Pepper Soup");
-  push("Goat Meat Pepper Soup", 5000, "Pepper Soup");
+  // Swallows & Traditional Soups — priced by protein; guest picks swallow + soup
+  push("Turkey", 10000, "Swallows & Traditional Soups", true);
+  push("Chicken", 9000, "Swallows & Traditional Soups", true);
+  push("Goat Meat", 8500, "Swallows & Traditional Soups", true);
+  push("Beef", 6500, "Swallows & Traditional Soups", true);
+  push("Kpomo", 6500, "Swallows & Traditional Soups", true);
 
-  push("Beef", 6500, "Proteins", true);
-  push("Kpomo", 6500, "Proteins", true);
-  push("Chicken", 9000, "Proteins", true);
-  push("Turkey", 10000, "Proteins", true);
-  push("Goat Meat", 8500, "Proteins", true);
+  // Rice & Pasta
+  push("Chinese Fried Rice", 15000, "Rice & Pasta");
+  push("Fried Rice & Turkey", 10500, "Rice & Pasta");
+  push("Basmati Fried Rice", 10500, "Rice & Pasta");
+  push("Basmati Jollof Rice", 10500, "Rice & Pasta");
+  push("Jollof Rice & Turkey", 10000, "Rice & Pasta");
+  push("Fried Rice & Chicken", 9500, "Rice & Pasta");
+  push("Jollof Rice & Chicken", 9000, "Rice & Pasta");
+  push("White Rice & Stew", 4000, "Rice & Pasta");
+  push("Jollof Spaghetti", 4000, "Rice & Pasta");
+  push("Indomie & Egg", 4000, "Rice & Pasta");
 
-  push("Chinese Fried Rice", 15000, "Rice / Pasta");
-  push("Jollof Rice & Chicken", 9000, "Rice / Pasta");
-  push("Jollof Rice & Turkey", 10000, "Rice / Pasta");
-  push("Fried Rice & Chicken", 9500, "Rice / Pasta");
-  push("Fried Rice & Turkey", 10500, "Rice / Pasta");
-  push("White Rice & Stew", 4000, "Rice / Pasta");
-  push("Chicken & Chips", 7000, "Rice / Pasta");
-  push("Yam & Egg Sauce", 5000, "Rice / Pasta");
-  push("Jollof Spaghetti", 4000, "Rice / Pasta");
-  push("Indomie & Egg", 4000, "Rice / Pasta");
-  push("Basmati Fried Rice", 10500, "Rice / Pasta");
-  push("Basmati Jollof Rice", 10500, "Rice / Pasta");
+  // Nigerian Starters & Specials
+  push("Fish Barbecue", 16000, "Nigerian Starters & Specials");
+  push("Catfish Pepper Soup", 15000, "Nigerian Starters & Specials");
+  push("Isiewu Full Pot", 15000, "Nigerian Starters & Specials");
+  push("Isiewu Half Pot", 7500, "Nigerian Starters & Specials");
+  push("Chicken & Chips", 7000, "Nigerian Starters & Specials");
+  push("Turkey Pepper Soup", 6500, "Nigerian Starters & Specials");
+  push("Yam & Egg Sauce", 5000, "Nigerian Starters & Specials");
+  push("Boiled Yam & Stew", 5000, "Nigerian Starters & Specials");
+  push("Potato & Egg Sauce", 5000, "Nigerian Starters & Specials");
+  push("Cow Tail Pepper Soup", 5000, "Nigerian Starters & Specials");
+  push("Goat Meat Pepper Soup", 5000, "Nigerian Starters & Specials");
+  push("Chicken Pepper Soup", 5000, "Nigerian Starters & Specials");
+  push("Nkwobi", 5000, "Nigerian Starters & Specials");
+  push("Asun", 2000, "Nigerian Starters & Specials");
 
-  push("Isiewu Half Pot", 7500, "Specials");
-  push("Isiewu Full Pot", 15000, "Specials");
-  push("Nkwobi", 5000, "Specials");
-  push("Fish Barbecue", 16000, "Specials");
-  push("Asun", 2000, "Specials");
+  // Standalone Proteins
+  push("Peppered Turkey", 6500, "Standalone Proteins");
+  push("Grilled Chicken", 6000, "Standalone Proteins");
+  push("Peppered Chicken", 5000, "Standalone Proteins");
+  push("Peppered Kpanla Fish (Large)", 1500, "Standalone Proteins");
+  push("Peppered Kpanla Fish (Medium)", 1200, "Standalone Proteins");
+  push("Peppered Kpanla Fish (Small)", 1000, "Standalone Proteins");
+  push("Beef or Kpomo", 1000, "Standalone Proteins");
+  push("Peppered Beef or Kpomo", 1000, "Standalone Proteins");
 
-  push("White Rice", 2000, "Extras");
-  push("Peppered Beef/Kpomo", 1000, "Extras");
-  push("Extra Soup", 2000, "Extras");
-  push("Peppered Chicken", 5000, "Extras");
-  push("Peppered Turkey", 6500, "Extras");
-  push("Boiled Yam & Stew", 5000, "Extras");
-  push("Grilled Chicken", 6000, "Extras");
-  push("Peppered Kpanla Fish", 1500, "Extras");
-  push("Potato & Egg Sauce", 5000, "Extras");
-  push("Egg Sauce", 2500, "Extras");
+  // Extras & Side Dishes
+  push("Egg Sauce", 2500, "Extras & Side Dishes");
+  push("White Rice", 2000, "Extras & Side Dishes");
+  push("Extra Soup", 2000, "Extras & Side Dishes");
 
   return items;
 }
@@ -736,17 +745,23 @@ function toggleAccordion(gi){
 
 function renderItemRow(item, menuType){
   if(item.hasSoup){
-    const selId = 'soup-' + item.id;
+    const swallowSelId = 'swallow-' + item.id;
+    const soupSelId = 'soup-' + item.id;
     return `
       <div class="flex items-center justify-between gap-3 py-3 border-b border-navy-800/8">
         <div class="min-w-0 flex-1">
           <p class="text-sm font-medium">${item.name}</p>
           <p class="text-xs text-navy-800/50 mb-1.5">${formatN(item.price)}</p>
-          <select id="${selId}" class="text-xs border border-navy-800/20 rounded-lg px-2 py-1.5 w-full max-w-[180px]">
-            ${SOUP_OPTIONS.map(s => `<option value="${s}">${s}</option>`).join('')}
-          </select>
+          <div class="flex gap-1.5">
+            <select id="${swallowSelId}" class="text-xs border border-navy-800/20 rounded-lg px-2 py-1.5 w-full max-w-[110px]">
+              ${SWALLOW_OPTIONS.map(s => `<option value="${s}">${s}</option>`).join('')}
+            </select>
+            <select id="${soupSelId}" class="text-xs border border-navy-800/20 rounded-lg px-2 py-1.5 w-full max-w-[130px]">
+              ${SOUP_OPTIONS.map(s => `<option value="${s}">${s}</option>`).join('')}
+            </select>
+          </div>
         </div>
-        <button type="button" class="add-btn shrink-0 bg-navy-800 text-white text-xs font-medium px-4 py-2 rounded-full" data-menu-type="food" data-item-id="${item.id}" data-soup-select="${selId}">Add</button>
+        <button type="button" class="add-btn shrink-0 bg-navy-800 text-white text-xs font-medium px-4 py-2 rounded-full" data-menu-type="food" data-item-id="${item.id}" data-swallow-select="${swallowSelId}" data-soup-select="${soupSelId}">Add</button>
       </div>
     `;
   }
@@ -768,6 +783,7 @@ document.getElementById('menuContainer').addEventListener('click', function(e){
   const itemId = btn.getAttribute('data-item-id');
   const menuType = btn.getAttribute('data-menu-type');
   const soupSelectId = btn.getAttribute('data-soup-select');
+  const swallowSelectId = btn.getAttribute('data-swallow-select');
   const menu = menuType === 'food' ? foodMenu : drinksMenu;
   const item = menu.find(i => i.id === itemId);
   if(!item){
@@ -775,7 +791,9 @@ document.getElementById('menuContainer').addEventListener('click', function(e){
     return;
   }
   const soup = soupSelectId ? (document.getElementById(soupSelectId) || {}).value : null;
-  addToCart(item, menuType, soup || null);
+  const swallow = swallowSelectId ? (document.getElementById(swallowSelectId) || {}).value : null;
+  const combo = [swallow, soup].filter(Boolean).join(', ');
+  addToCart(item, menuType, combo || null);
 
   btn.classList.add('added');
   const originalText = btn.textContent;
