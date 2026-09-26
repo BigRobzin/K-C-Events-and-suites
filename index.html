@@ -143,17 +143,17 @@
         <div id="kitchenPayBlock" class="hidden border border-navy-800/15 rounded-xl p-4">
           <p class="text-xs tracking-wide text-bronze font-semibold mb-2">KITCHEN ACCOUNT — FOOD</p>
           <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Amount</span><span id="kitchenAmount" class="font-semibold">₦0</span></div>
-          <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Bank</span><span>Moniepoint</span></div>
-          <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Account No.</span><span class="font-mono">5010792977</span></div>
-          <div class="flex justify-between text-sm"><span class="text-navy-800/60">Account Name</span><span class="text-right">K-C Hospitality Enterprises</span></div>
+          <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Bank</span><span id="kitchenBankName"></span></div>
+          <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Account No.</span><span id="kitchenAccNo" class="font-mono"></span></div>
+          <div class="flex justify-between text-sm"><span class="text-navy-800/60">Account Name</span><span id="kitchenAccName" class="text-right"></span></div>
         </div>
 
         <div id="barPayBlock" class="hidden border border-navy-800/15 rounded-xl p-4">
           <p class="text-xs tracking-wide text-bronze font-semibold mb-2">BAR ACCOUNT — DRINKS</p>
           <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Amount</span><span id="barAmount" class="font-semibold">₦0</span></div>
-          <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Bank</span><span>Moniepoint</span></div>
-          <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Account No.</span><span class="font-mono">5523006613</span></div>
-          <div class="flex justify-between text-sm"><span class="text-navy-800/60">Account Name</span><span class="text-right">K-C Hospitality Enterprises</span></div>
+          <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Bank</span><span id="barBankName"></span></div>
+          <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Account No.</span><span id="barAccNo" class="font-mono"></span></div>
+          <div class="flex justify-between text-sm"><span class="text-navy-800/60">Account Name</span><span id="barAccName" class="text-right"></span></div>
         </div>
 
         <button onclick="confirmPayment()" class="w-full bg-navy-800 text-white font-semibold py-3.5 rounded-full mt-2">I Have Made Payment</button>
@@ -235,10 +235,51 @@
 
     <!-- Settings panel -->
     <div id="mgrPanelSettings" class="hidden">
+      <p class="text-xs font-semibold text-bronze uppercase tracking-wide mb-2">Contact</p>
       <label class="block text-xs text-navy-800/60 mb-1">Receptionist WhatsApp Number</label>
-      <input id="mgrWhatsappInput" type="text" class="w-full border border-navy-800/20 rounded-lg px-3 py-2.5 text-sm mb-3">
-      <button onclick="saveWhatsappSetting()" class="bg-navy-800 text-white text-sm px-5 py-2.5 rounded-full">Save</button>
+      <input id="mgrWhatsappInput" type="text" class="w-full border border-navy-800/20 rounded-lg px-3 py-2.5 text-sm mb-4">
+
+      <p class="text-xs font-semibold text-bronze uppercase tracking-wide mb-2">Kitchen Account (Food)</p>
+      <div class="grid grid-cols-2 gap-2 mb-1">
+        <div>
+          <label class="block text-xs text-navy-800/60 mb-1">Bank</label>
+          <input id="mgrKitchenBank" type="text" class="w-full border border-navy-800/20 rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs text-navy-800/60 mb-1">Account No.</label>
+          <input id="mgrKitchenAccNo" type="text" inputmode="numeric" class="w-full border border-navy-800/20 rounded-lg px-3 py-2 text-sm">
+        </div>
+      </div>
+      <label class="block text-xs text-navy-800/60 mb-1">Account Name</label>
+      <input id="mgrKitchenAccName" type="text" class="w-full border border-navy-800/20 rounded-lg px-3 py-2 text-sm mb-4">
+
+      <p class="text-xs font-semibold text-bronze uppercase tracking-wide mb-2">Bar Account (Drinks)</p>
+      <div class="grid grid-cols-2 gap-2 mb-1">
+        <div>
+          <label class="block text-xs text-navy-800/60 mb-1">Bank</label>
+          <input id="mgrBarBank" type="text" class="w-full border border-navy-800/20 rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs text-navy-800/60 mb-1">Account No.</label>
+          <input id="mgrBarAccNo" type="text" inputmode="numeric" class="w-full border border-navy-800/20 rounded-lg px-3 py-2 text-sm">
+        </div>
+      </div>
+      <label class="block text-xs text-navy-800/60 mb-1">Account Name</label>
+      <input id="mgrBarAccName" type="text" class="w-full border border-navy-800/20 rounded-lg px-3 py-2 text-sm mb-4">
+
+      <button onclick="saveContactSettings()" class="bg-navy-800 text-white text-sm px-5 py-2.5 rounded-full">Save Settings</button>
       <p id="settingsSaved" class="text-xs text-green-600 mt-2 hidden">Saved.</p>
+
+      <div class="mt-8 pt-6 border-t border-navy-800/10">
+        <p class="text-xs font-semibold text-bronze uppercase tracking-wide mb-2">Change Manager Password</p>
+        <label class="block text-xs text-navy-800/60 mb-1">Current Password</label>
+        <input id="mgrCurrentPassword" type="password" class="w-full border border-navy-800/20 rounded-lg px-3 py-2 text-sm mb-3">
+        <label class="block text-xs text-navy-800/60 mb-1">New Password</label>
+        <input id="mgrNewPassword" type="password" class="w-full border border-navy-800/20 rounded-lg px-3 py-2 text-sm mb-3">
+        <button onclick="changeManagerPassword()" class="bg-navy-800 text-white text-sm px-5 py-2.5 rounded-full">Update Password</button>
+        <p id="passwordChangeError" class="text-xs text-red-500 mt-2 hidden">Current password is incorrect.</p>
+        <p id="passwordChangeSuccess" class="text-xs text-green-600 mt-2 hidden">Password updated.</p>
+      </div>
 
       <div class="mt-8 pt-6 border-t border-navy-800/10">
         <p class="text-xs text-navy-800/60 mb-2">Troubleshooting: if menu items or orders look wrong on a device, this clears saved app data on THIS device only and reloads fresh defaults. It does not affect other guests' devices.</p>
@@ -346,7 +387,16 @@ function initStorage(){
   const existingDrinks = LS.get('kc_drinks_menu');
   if(!Array.isArray(existingFood) || existingFood.length === 0) LS.set('kc_food_menu', seedFoodMenu());
   if(!Array.isArray(existingDrinks) || existingDrinks.length === 0) LS.set('kc_drinks_menu', seedDrinksMenu());
-  if(!LS.get('kc_settings')) LS.set('kc_settings', { whatsapp: "2347080716547", managerPassword: MANAGER_PASSWORD_DEFAULT });
+  if(!LS.get('kc_settings')) LS.set('kc_settings', {
+    whatsapp: "2347080716547",
+    managerPassword: MANAGER_PASSWORD_DEFAULT,
+    kitchenBank: "Moniepoint",
+    kitchenAccNo: "5010792977",
+    kitchenAccName: "K-C Hospitality Enterprises",
+    barBank: "Moniepoint",
+    barAccNo: "5523006613",
+    barAccName: "K-C Hospitality Enterprises"
+  });
   if(!LS.get('kc_orders')) LS.set('kc_orders', []);
 }
 initStorage();
@@ -516,10 +566,17 @@ function closeCart(){
 // ---------- Checkout ----------
 function openCheckout(){
   const totals = cartTotals();
+  const s = LS.get('kc_settings', settings) || settings;
   document.getElementById('kitchenPayBlock').classList.toggle('hidden', totals.food === 0);
   document.getElementById('barPayBlock').classList.toggle('hidden', totals.drinks === 0);
   document.getElementById('kitchenAmount').textContent = formatN(totals.food);
   document.getElementById('barAmount').textContent = formatN(totals.drinks);
+  document.getElementById('kitchenBankName').textContent = s.kitchenBank || '';
+  document.getElementById('kitchenAccNo').textContent = s.kitchenAccNo || '';
+  document.getElementById('kitchenAccName').textContent = s.kitchenAccName || '';
+  document.getElementById('barBankName').textContent = s.barBank || '';
+  document.getElementById('barAccNo').textContent = s.barAccNo || '';
+  document.getElementById('barAccName').textContent = s.barAccName || '';
   document.getElementById('checkoutOverlay').classList.remove('hidden');
   document.getElementById('checkoutOverlay').classList.add('flex');
 }
@@ -571,8 +628,9 @@ function sendToWhatsApp(order){
     lines.push('• ' + it.name + ' x' + it.qty + ' — ' + formatN(it.subtotal));
   });
   lines.push('');
-  if(order.kitchenTotal > 0) lines.push('Kitchen (Food) Total: ' + formatN(order.kitchenTotal) + ' — paid to Moniepoint 5010792977');
-  if(order.barTotal > 0) lines.push('Bar (Drinks) Total: ' + formatN(order.barTotal) + ' — paid to Moniepoint 5523006613');
+  const s = LS.get('kc_settings', settings) || settings;
+  if(order.kitchenTotal > 0) lines.push('Kitchen (Food) Total: ' + formatN(order.kitchenTotal) + ' — paid to ' + (s.kitchenBank||'') + ' ' + (s.kitchenAccNo||''));
+  if(order.barTotal > 0) lines.push('Bar (Drinks) Total: ' + formatN(order.barTotal) + ' — paid to ' + (s.barBank||'') + ' ' + (s.barAccNo||''));
   lines.push('');
   lines.push('Grand Total: ' + formatN(order.total));
   lines.push('');
@@ -798,13 +856,55 @@ function saveMenuItem(itemId){
 function renderMgrSettings(){
   settings = LS.get('kc_settings', settings) || settings;
   document.getElementById('mgrWhatsappInput').value = settings.whatsapp || '';
+  document.getElementById('mgrKitchenBank').value = settings.kitchenBank || '';
+  document.getElementById('mgrKitchenAccNo').value = settings.kitchenAccNo || '';
+  document.getElementById('mgrKitchenAccName').value = settings.kitchenAccName || '';
+  document.getElementById('mgrBarBank').value = settings.barBank || '';
+  document.getElementById('mgrBarAccNo').value = settings.barAccNo || '';
+  document.getElementById('mgrBarAccName').value = settings.barAccName || '';
   document.getElementById('settingsSaved').classList.add('hidden');
+  document.getElementById('mgrCurrentPassword').value = '';
+  document.getElementById('mgrNewPassword').value = '';
+  document.getElementById('passwordChangeError').classList.add('hidden');
+  document.getElementById('passwordChangeSuccess').classList.add('hidden');
 }
-function saveWhatsappSetting(){
-  const val = document.getElementById('mgrWhatsappInput').value.replace(/\D/g,'');
-  settings.whatsapp = val;
+
+function saveContactSettings(){
+  settings = LS.get('kc_settings', settings) || settings;
+  settings.whatsapp = document.getElementById('mgrWhatsappInput').value.replace(/\D/g,'');
+  settings.kitchenBank = document.getElementById('mgrKitchenBank').value.trim();
+  settings.kitchenAccNo = document.getElementById('mgrKitchenAccNo').value.trim();
+  settings.kitchenAccName = document.getElementById('mgrKitchenAccName').value.trim();
+  settings.barBank = document.getElementById('mgrBarBank').value.trim();
+  settings.barAccNo = document.getElementById('mgrBarAccNo').value.trim();
+  settings.barAccName = document.getElementById('mgrBarAccName').value.trim();
   LS.set('kc_settings', settings);
   document.getElementById('settingsSaved').classList.remove('hidden');
+}
+
+function changeManagerPassword(){
+  settings = LS.get('kc_settings', settings) || settings;
+  const current = document.getElementById('mgrCurrentPassword').value;
+  const next = document.getElementById('mgrNewPassword').value;
+  const correct = settings.managerPassword || MANAGER_PASSWORD_DEFAULT;
+  const errorEl = document.getElementById('passwordChangeError');
+  const successEl = document.getElementById('passwordChangeSuccess');
+  errorEl.classList.add('hidden');
+  successEl.classList.add('hidden');
+  if(current !== correct){
+    errorEl.classList.remove('hidden');
+    return;
+  }
+  if(!next || next.length < 4){
+    errorEl.textContent = 'New password must be at least 4 characters.';
+    errorEl.classList.remove('hidden');
+    return;
+  }
+  settings.managerPassword = next;
+  LS.set('kc_settings', settings);
+  document.getElementById('mgrCurrentPassword').value = '';
+  document.getElementById('mgrNewPassword').value = '';
+  successEl.classList.remove('hidden');
 }
 
 // ---------- Init ----------
