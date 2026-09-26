@@ -144,7 +144,7 @@
           <p class="text-xs tracking-wide text-bronze font-semibold mb-2">KITCHEN ACCOUNT — FOOD</p>
           <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Amount</span><span id="kitchenAmount" class="font-semibold">₦0</span></div>
           <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Bank</span><span id="kitchenBankName"></span></div>
-          <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Account No.</span><span id="kitchenAccNo" class="font-mono"></span></div>
+          <div class="flex justify-between items-center text-sm mb-1"><span class="text-navy-800/60">Account No.</span><span class="flex items-center gap-2"><span id="kitchenAccNo" class="font-mono"></span><button type="button" onclick="copyAccountNumber('kitchenAccNo', this)" class="text-[10px] uppercase tracking-wide bg-navy-800 text-white px-2 py-1 rounded-full shrink-0">Copy</button></span></div>
           <div class="flex justify-between text-sm"><span class="text-navy-800/60">Account Name</span><span id="kitchenAccName" class="text-right"></span></div>
         </div>
 
@@ -152,7 +152,7 @@
           <p class="text-xs tracking-wide text-bronze font-semibold mb-2">BAR ACCOUNT — DRINKS</p>
           <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Amount</span><span id="barAmount" class="font-semibold">₦0</span></div>
           <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Bank</span><span id="barBankName"></span></div>
-          <div class="flex justify-between text-sm mb-1"><span class="text-navy-800/60">Account No.</span><span id="barAccNo" class="font-mono"></span></div>
+          <div class="flex justify-between items-center text-sm mb-1"><span class="text-navy-800/60">Account No.</span><span class="flex items-center gap-2"><span id="barAccNo" class="font-mono"></span><button type="button" onclick="copyAccountNumber('barAccNo', this)" class="text-[10px] uppercase tracking-wide bg-navy-800 text-white px-2 py-1 rounded-full shrink-0">Copy</button></span></div>
           <div class="flex justify-between text-sm"><span class="text-navy-800/60">Account Name</span><span id="barAccName" class="text-right"></span></div>
         </div>
 
@@ -317,11 +317,11 @@ function seedFoodMenu(){
   push("Cow Tail Pepper Soup", 5000, "Pepper Soup");
   push("Goat Meat Pepper Soup", 5000, "Pepper Soup");
 
-  push("Beef", 6500, "Main Dish", true);
-  push("Kpomo", 6500, "Main Dish", true);
-  push("Chicken", 9000, "Main Dish", true);
-  push("Turkey", 10000, "Main Dish", true);
-  push("Goat Meat", 8500, "Main Dish", true);
+  push("Beef", 6500, "Proteins", true);
+  push("Kpomo", 6500, "Proteins", true);
+  push("Chicken", 9000, "Proteins", true);
+  push("Turkey", 10000, "Proteins", true);
+  push("Goat Meat", 8500, "Proteins", true);
 
   push("Chinese Fried Rice", 15000, "Rice / Pasta");
   push("Jollof Rice & Chicken", 9000, "Rice / Pasta");
@@ -331,7 +331,7 @@ function seedFoodMenu(){
   push("White Rice & Stew", 4000, "Rice / Pasta");
   push("Chicken & Chips", 7000, "Rice / Pasta");
   push("Yam & Egg Sauce", 5000, "Rice / Pasta");
-  push("Spaghetti Jollof", 4000, "Rice / Pasta");
+  push("Jollof Spaghetti", 4000, "Rice / Pasta");
   push("Indomie & Egg", 4000, "Rice / Pasta");
   push("Basmati Fried Rice", 10500, "Rice / Pasta");
   push("Basmati Jollof Rice", 10500, "Rice / Pasta");
@@ -583,6 +583,40 @@ function openCheckout(){
 function closeCheckout(){
   document.getElementById('checkoutOverlay').classList.add('hidden');
   document.getElementById('checkoutOverlay').classList.remove('flex');
+}
+
+function copyAccountNumber(spanId, btnEl){
+  const text = (document.getElementById(spanId).textContent || '').trim();
+  if(!text) return;
+  const onDone = () => {
+    showToast('Account number copied');
+    if(btnEl){
+      const original = btnEl.textContent;
+      btnEl.textContent = 'Copied ✓';
+      setTimeout(() => { btnEl.textContent = original; }, 1200);
+    }
+  };
+  const fallbackCopy = () => {
+    try{
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      onDone();
+    }catch(e){
+      showToast('Could not copy — please copy manually');
+    }
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(onDone).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
 }
 
 function confirmPayment(){
