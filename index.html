@@ -269,7 +269,7 @@
       <input id="mgrBarAccName" type="text" class="w-full border border-navy-800/20 rounded-lg px-3 py-2 text-sm mb-4">
 
       <p class="text-xs font-semibold text-bronze uppercase tracking-wide mb-2">Staff Access (Receptionist)</p>
-      <label class="block text-xs text-navy-800/60 mb-1">Staff Password — gives a view-only Orders screen, no menu or settings access</label>
+      <label class="block text-xs text-navy-800/60 mb-1">Staff Password — lets reception view Orders and confirm/mark payments, with no access to Menu or Settings</label>
       <input id="mgrStaffPasswordInput" type="text" class="w-full border border-navy-800/20 rounded-lg px-3 py-2.5 text-sm mb-4">
 
       <button onclick="saveContactSettings()" class="bg-navy-800 text-white text-sm px-5 py-2.5 rounded-full">Save Settings</button>
@@ -913,7 +913,10 @@ function renderMgrOrders(){
     list.innerHTML = '<p class="text-sm text-navy-800/40 text-center py-10">No orders in this view.</p>';
     return;
   }
-  const isManager = currentRole === 'manager';
+  // Both manager and staff can confirm/mark unpaid — the receptionist is the one
+  // actually checking Moniepoint, so they need this action too. Only Menu and
+  // Settings stay manager-only (guarded separately in openManagerDashboard).
+  const canActOnOrders = currentRole === 'manager' || currentRole === 'staff';
   list.innerHTML = visible.slice().reverse().map(o => `
     <div class="bg-white border border-navy-800/10 rounded-xl p-4">
       <div class="flex justify-between items-start mb-1">
@@ -923,7 +926,7 @@ function renderMgrOrders(){
       <p class="text-xs text-navy-800/40 mb-2">${new Date(o.timestamp).toLocaleString('en-NG')}</p>
       <p class="text-xs text-navy-800/60 mb-2">${o.items.map(i => i.name + ' x' + i.qty).join(', ')}</p>
       <p class="text-sm font-semibold mb-2">${formatN(o.total)}</p>
-      ${isManager ? `
+      ${canActOnOrders ? `
         <div class="flex gap-2 pt-2 border-t border-navy-800/8">
           <button onclick="confirmOrderPayment('${o.id}')" class="flex-1 text-xs bg-green-600 text-white px-3 py-2 rounded-lg">Confirm Payment</button>
           <button onclick="markOrderUnpaid('${o.id}')" class="flex-1 text-xs border border-red-400 text-red-500 px-3 py-2 rounded-lg">Mark Unpaid</button>
