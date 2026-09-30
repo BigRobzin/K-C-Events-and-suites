@@ -181,8 +181,8 @@
 <!-- ================= MANAGER LOGIN ================= -->
 <div id="managerLoginOverlay" class="fixed inset-0 bg-black/60 z-[70] hidden items-center justify-center px-4">
   <div class="bg-white rounded-2xl max-w-xs w-full p-6">
-    <h2 class="font-serif text-lg mb-1">Manager Access</h2>
-    <p class="text-xs text-navy-800/50 mb-4">Enter the manager password to continue.</p>
+    <h2 class="font-serif text-lg mb-1">Staff Access</h2>
+    <p class="text-xs text-navy-800/50 mb-4">Enter your access password to continue.</p>
     <input id="managerPasswordInput" type="password" placeholder="Password" class="w-full border border-navy-800/20 rounded-lg px-3 py-2.5 text-sm mb-2 outline-none focus:border-gold">
     <p id="managerLoginError" class="text-xs text-red-500 mb-2 hidden">Incorrect password.</p>
     <div class="flex gap-2 mt-2">
@@ -195,7 +195,7 @@
 <!-- ================= MANAGER DASHBOARD ================= -->
 <div id="managerDashboard" class="hidden fixed inset-0 z-[80] bg-ivory overflow-y-auto">
   <div class="sticky top-0 bg-navy-800 text-white px-4 py-4 flex items-center justify-between z-10">
-    <h1 class="font-serif text-lg">Manager Dashboard</h1>
+    <h1 class="font-serif text-lg" id="mgrDashboardTitle">Manager Dashboard</h1>
     <button onclick="closeManagerDashboard()" class="text-white/70 text-sm border border-white/30 rounded-full px-3 py-1">Exit</button>
   </div>
   <div class="px-4 pt-4 flex gap-2 max-w-3xl mx-auto">
@@ -221,6 +221,7 @@
           <p class="text-[10px] text-navy-800/50 mt-1">All-Time Orders</p>
         </div>
       </div>
+      <div id="mgrOrderFilters" class="flex gap-2 mb-4 overflow-x-auto scrollbar-none"></div>
       <div id="mgrOrdersList" class="space-y-3"></div>
     </div>
 
@@ -267,6 +268,10 @@
       <label class="block text-xs text-navy-800/60 mb-1">Account Name</label>
       <input id="mgrBarAccName" type="text" class="w-full border border-navy-800/20 rounded-lg px-3 py-2 text-sm mb-4">
 
+      <p class="text-xs font-semibold text-bronze uppercase tracking-wide mb-2">Staff Access (Receptionist)</p>
+      <label class="block text-xs text-navy-800/60 mb-1">Staff Password — gives a view-only Orders screen, no menu or settings access</label>
+      <input id="mgrStaffPasswordInput" type="text" class="w-full border border-navy-800/20 rounded-lg px-3 py-2.5 text-sm mb-4">
+
       <button onclick="saveContactSettings()" class="bg-navy-800 text-white text-sm px-5 py-2.5 rounded-full">Save Settings</button>
       <p id="settingsSaved" class="text-xs text-green-600 mt-2 hidden">Saved.</p>
 
@@ -295,6 +300,7 @@
    ============================================================ */
 
 const MANAGER_PASSWORD_DEFAULT = "KCManager2026";
+const STAFF_PASSWORD_DEFAULT = "KCStaff2026";
 
 // ---------- Room map ----------
 const ROOM_MAP = {};
@@ -399,6 +405,7 @@ function initStorage(){
   if(!LS.get('kc_settings')) LS.set('kc_settings', {
     whatsapp: "2347080716547",
     managerPassword: MANAGER_PASSWORD_DEFAULT,
+    staffPassword: STAFF_PASSWORD_DEFAULT,
     kitchenBank: "Moniepoint",
     kitchenAccNo: "5010792977",
     kitchenAccName: "K-C Hospitality Enterprises",
@@ -638,7 +645,8 @@ function confirmPayment(){
     items: cart.map(c => ({ name: c.name, qty: c.qty, price: c.price, subtotal: c.price*c.qty, menuType: c.menuType })),
     kitchenTotal: totals.food,
     barTotal: totals.drinks,
-    total: totals.total
+    total: totals.total,
+    status: 'Pending'
   };
   orders.push(order);
   LS.set('kc_orders', orders);
@@ -812,11 +820,19 @@ function closeManagerLogin(){
   document.getElementById('managerLoginOverlay').classList.add('hidden');
   document.getElementById('managerLoginOverlay').classList.remove('flex');
 }
+let currentRole = null; // 'manager' | 'staff'
+
 function attemptManagerLogin(){
   const val = document.getElementById('managerPasswordInput').value;
   const savedSettings = LS.get('kc_settings', settings) || settings;
-  const correct = savedSettings.managerPassword || MANAGER_PASSWORD_DEFAULT;
-  if(val === correct){
+  const managerPass = savedSettings.managerPassword || MANAGER_PASSWORD_DEFAULT;
+  const staffPass = savedSettings.staffPassword || STAFF_PASSWORD_DEFAULT;
+  if(val === managerPass){
+    currentRole = 'manager';
+    closeManagerLogin();
+    openManagerDashboard();
+  } else if(val === staffPass){
+    currentRole = 'staff';
     closeManagerLogin();
     openManagerDashboard();
   } else {
@@ -829,14 +845,22 @@ function openManagerDashboard(){
   settings = LS.get('kc_settings', settings) || settings;
   orders = LS.get('kc_orders', []) || [];
   document.getElementById('managerDashboard').classList.remove('hidden');
+
+  const isManager = currentRole === 'manager';
+  document.getElementById('mgrDashboardTitle').textContent = isManager ? 'Manager Dashboard' : 'Staff — Orders';
+  document.getElementById('mgrTabMenuBtn').classList.toggle('hidden', !isManager);
+  document.getElementById('mgrTabSettingsBtn').classList.toggle('hidden', !isManager);
+
   switchMgrTab('orders');
 }
 function closeManagerDashboard(){
   document.getElementById('managerDashboard').classList.add('hidden');
+  currentRole = null;
 }
 
 let mgrTab = 'orders';
 function switchMgrTab(tab){
+  if(currentRole !== 'manager' && tab !== 'orders') tab = 'orders';
   mgrTab = tab;
   ['orders','menu','settings'].forEach(t => {
     document.getElementById('mgrTab' + t.charAt(0).toUpperCase()+t.slice(1) + 'Btn').className =
@@ -848,30 +872,77 @@ function switchMgrTab(tab){
   if(tab === 'settings') renderMgrSettings();
 }
 
+let mgrOrderFilter = 'all';
+
+function orderStatus(o){ return o.status || 'Pending'; }
+
+function switchOrderFilter(f){
+  mgrOrderFilter = f;
+  renderMgrOrders();
+}
+
+function statusBadge(status){
+  const styles = {
+    Pending: 'bg-amber-100 text-amber-700',
+    Confirmed: 'bg-green-100 text-green-700',
+    Unpaid: 'bg-red-100 text-red-600'
+  };
+  return `<span class="text-[10px] font-semibold px-2 py-1 rounded-full ${styles[status] || styles.Pending}">${status}</span>`;
+}
+
 function renderMgrOrders(){
   orders = LS.get('kc_orders', []) || [];
   const today = new Date().toDateString();
   const todays = orders.filter(o => new Date(o.timestamp).toDateString() === today);
+  const confirmedToday = todays.filter(o => orderStatus(o) === 'Confirmed');
   document.getElementById('statTodayOrders').textContent = todays.length;
-  document.getElementById('statTodayRevenue').textContent = formatN(todays.reduce((s,o)=>s+o.total,0));
+  document.getElementById('statTodayRevenue').textContent = formatN(confirmedToday.reduce((s,o)=>s+o.total,0));
   document.getElementById('statAllOrders').textContent = orders.length;
 
+  // Filter tabs
+  const filters = ['all','Pending','Confirmed','Unpaid'];
+  const filterLabels = { all: 'All', Pending: 'Pending', Confirmed: 'Confirmed', Unpaid: 'Unpaid' };
+  document.getElementById('mgrOrderFilters').innerHTML = filters.map(f => `
+    <button onclick="switchOrderFilter('${f}')" class="shrink-0 text-xs px-3 py-1.5 rounded-full border ${mgrOrderFilter===f ? 'bg-navy-800 text-white border-navy-800' : 'border-navy-800/20 text-navy-800/70'}">${filterLabels[f]}</button>
+  `).join('');
+
+  const visible = mgrOrderFilter === 'all' ? orders : orders.filter(o => orderStatus(o) === mgrOrderFilter);
+
   const list = document.getElementById('mgrOrdersList');
-  if(orders.length === 0){
-    list.innerHTML = '<p class="text-sm text-navy-800/40 text-center py-10">No orders logged yet.</p>';
+  if(visible.length === 0){
+    list.innerHTML = '<p class="text-sm text-navy-800/40 text-center py-10">No orders in this view.</p>';
     return;
   }
-  list.innerHTML = orders.slice().reverse().map(o => `
+  const isManager = currentRole === 'manager';
+  list.innerHTML = visible.slice().reverse().map(o => `
     <div class="bg-white border border-navy-800/10 rounded-xl p-4">
       <div class="flex justify-between items-start mb-1">
         <p class="font-medium text-sm">Room ${o.room} <span class="text-navy-800/40 font-normal">(${o.category})</span></p>
-        <p class="text-xs text-navy-800/40">${new Date(o.timestamp).toLocaleString('en-NG')}</p>
+        ${statusBadge(orderStatus(o))}
       </div>
+      <p class="text-xs text-navy-800/40 mb-2">${new Date(o.timestamp).toLocaleString('en-NG')}</p>
       <p class="text-xs text-navy-800/60 mb-2">${o.items.map(i => i.name + ' x' + i.qty).join(', ')}</p>
-      <p class="text-sm font-semibold">${formatN(o.total)}</p>
+      <p class="text-sm font-semibold mb-2">${formatN(o.total)}</p>
+      ${isManager ? `
+        <div class="flex gap-2 pt-2 border-t border-navy-800/8">
+          <button onclick="confirmOrderPayment('${o.id}')" class="flex-1 text-xs bg-green-600 text-white px-3 py-2 rounded-lg">Confirm Payment</button>
+          <button onclick="markOrderUnpaid('${o.id}')" class="flex-1 text-xs border border-red-400 text-red-500 px-3 py-2 rounded-lg">Mark Unpaid</button>
+        </div>
+      ` : ''}
     </div>
   `).join('');
 }
+
+function setOrderStatus(orderId, status){
+  orders = LS.get('kc_orders', []) || [];
+  const order = orders.find(o => o.id === orderId);
+  if(!order) return;
+  order.status = status;
+  LS.set('kc_orders', orders);
+  renderMgrOrders();
+}
+function confirmOrderPayment(orderId){ setOrderStatus(orderId, 'Confirmed'); }
+function markOrderUnpaid(orderId){ setOrderStatus(orderId, 'Unpaid'); }
 
 let mgrMenuType = 'food';
 function switchMgrMenuType(type){
@@ -914,6 +985,7 @@ function renderMgrSettings(){
   document.getElementById('mgrBarBank').value = settings.barBank || '';
   document.getElementById('mgrBarAccNo').value = settings.barAccNo || '';
   document.getElementById('mgrBarAccName').value = settings.barAccName || '';
+  document.getElementById('mgrStaffPasswordInput').value = settings.staffPassword || STAFF_PASSWORD_DEFAULT;
   document.getElementById('settingsSaved').classList.add('hidden');
   document.getElementById('mgrCurrentPassword').value = '';
   document.getElementById('mgrNewPassword').value = '';
@@ -930,6 +1002,8 @@ function saveContactSettings(){
   settings.barBank = document.getElementById('mgrBarBank').value.trim();
   settings.barAccNo = document.getElementById('mgrBarAccNo').value.trim();
   settings.barAccName = document.getElementById('mgrBarAccName').value.trim();
+  const newStaffPass = document.getElementById('mgrStaffPasswordInput').value.trim();
+  if(newStaffPass) settings.staffPassword = newStaffPass;
   LS.set('kc_settings', settings);
   document.getElementById('settingsSaved').classList.remove('hidden');
 }
